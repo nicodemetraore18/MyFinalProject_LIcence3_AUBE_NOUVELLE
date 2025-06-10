@@ -1,0 +1,127 @@
+/* src/App.css */
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .navbar {
+    padding: 1rem;
+  }
+}
+
+
+
+.read-the-docs {
+  color: #888;
+}
+/* Ajoutez un fond par défaut */
+body {
+  background-color: #f4f4f9; /* ou une autre couleur */
+  color: #333;
+}
+
+/* Vous pouvez aussi définir des couleurs pour l'en-tête ou les autres éléments */
+.navbar {
+  background-color: #1d4ed8; /* Bleu foncé de Tailwind */
+  color: white;
+  animation: fadeIn 2s ease-in;
+}
+
+.card {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.sidebar {
+  background-color: #1f2937; /* Un gris foncé */
+  width: 250px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  transition: transform 0.3s ease;
+}
+
+.sidebar:hover {
+  transform: translateX(0);
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 10px;
+  color: white;
+  text-align: center;
+}
+
+.sidebar li:hover {
+  background-color: #374151;
+  cursor: pointer;
+}
+/* Dans votre fichier CSS global ou spécifique */
+@media print {
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  .bulletin-paie {
+    width: 100%;
+    margin: 0 auto;
+    color: #000;
+  }
+  
+  /* Masquer les boutons et autres éléments non souhaités à l'impression */
+  .no-print {
+    display: none;
+  }
+}

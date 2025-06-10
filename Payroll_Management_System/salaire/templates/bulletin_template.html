@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletin de Paie - Centre MURAZ</title>
+    <style>
+        body { font-family: "Arial", sans-serif; padding: 20px; }
+        .container { width: 100%; margin: auto; }
+        h1, h2 { text-align: center; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { width: 120px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .info-section, .salary-section { margin-top: 20px; }
+        .footer { text-align: center; margin-top: 50px; font-size: 12px; }
+        .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.info-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+    {% if logo_url %}
+        <img src="{{ logo_url }}" alt="Logo de {{ parametres.nom_entreprise }}" width="120">
+    {% else %}
+        <p>Aucun logo disponible</p>
+    {% endif %}
+    <h1>{{ parametres.nom_entreprise }} - BULLETIN DE PAIE</h1>
+</div>
+
+
+
+        <h2>Informations du Bulletin</h2>
+<table class="info-table">
+    <tr>
+        <td><strong>PÉRIODE PAYÉE:</strong> {{ fiche.periode }}</td>
+        <td><strong>DATE DE TRAITEMENT:</strong> {{ fiche.date_traitement }}</td>
+    </tr>
+    <tr>
+        <td><strong>Nom & Prénoms:</strong> {{ employe.nom }} {{ employe.prenom }}</td>
+        <td><strong>Emploi:</strong> {{ employe.poste }}</td>
+    </tr>
+    <tr>
+        <td><strong>Statut Agent:</strong> {{ employe.statut }}</td>
+        <td><strong>Mode de Paiement:</strong> {{ fiche.mode_paiement }}</td>
+    </tr>
+    <tr>
+        <td><strong>Numéro de Compte:</strong> {{ fiche.numero_compte }}</td>
+        <td><strong>Intitulé du Compte:</strong> {{ fiche.intitule_compte }}</td>
+    </tr>
+</table>
+        <h2>DESIGNATION DES ÉLÉMENTS DE VACATION</h2>
+<table class="salary-section">
+    <tr><th>Élément</th><th>Avoirs (FCFA)</th><th>Retenues (FCFA)</th></tr>
+
+    <!-- Avoirs -->
+    {% for avoir in avoirs %}
+    <tr>
+        <td>{{ avoir.nom }}</td>
+        <td>{{ avoir.montant }}</td>
+        <td>#N/A</td>
+    </tr>
+    {% endfor %}
+
+    <!-- Retenues -->
+    {% for retenue in retenues %}
+    <tr>
+        <td>{{ retenue.nom }}</td>
+        <td>#N/A</td>
+        <td>{{ retenue.montant }}</td>
+    </tr>
+    {% endfor %}
+
+    <!-- Totaux -->
+    <tr><td><strong>Salaire Net à Payer</strong></td><td>#N/A</td><td><strong>{{ totaux.salaire_net }}</strong></td></tr>
+    <tr><td><strong>Vacation Net à Payer</strong></td><td>#N/A</td><td><strong>{{ totaux.vacation_net }}</strong></td></tr>
+    <tr><td><strong>Net à Payer</strong></td><td>#N/A</td><td><strong>{{ totaux.net_a_payer }}</strong></td></tr>
+</table>
+
+
+       
+    </div>
+</body>
+<footer class="footer">
+    <p>{{ parametres.footer }}</p>
+</footer>
+</html>

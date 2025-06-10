@@ -1,0 +1,76 @@
+[
+  {
+    "model": "salaire.projet",
+    "pk": 1,
+    "fields": {
+      "nom": "Projet Alpha",
+      "description": "Ce projet est centré sur la mise en place d'une solution logicielle.",
+      "date_debut": "2025-01-01",
+      "date_fin": "2025-12-31"
+    }
+  },
+  {
+    "model": "salaire.projet",
+    "pk": 2,
+    "fields": {
+      "nom": "Projet Beta",
+      "description": "Un projet de développement d'application mobile.",
+      "date_debut": "2025-02-01",
+      "date_fin": "2025-11-30"
+    }
+  },
+  {
+    "model": "salaire.poste",
+    "pk": 1,
+    "fields": {
+      "nom": "Développeur",
+      "projet": 1
+    }
+  },
+  {
+    "model": "salaire.poste",
+    "pk": 2,
+    "fields": {
+      "nom": "Comptable",
+      "projet": 2
+    }
+  },
+  {
+    "model": "salaire.employe",
+    "pk": 1,
+    "fields": {
+      "nom": "Traoré",
+      "prenom": "Cheick",
+      "poste": 1,
+      "projet": 1
+    }
+  },
+  {
+    "model": "salaire.employe",
+    "pk": 2,
+    "fields": {
+      "nom": "Kaboré",
+      "prenom": "Aïcha",
+      "poste": 2,
+      "projet": 2
+    }
+  },
+  {
+    "model": "salaire.salaire",
+    "pk": 1,
+    "fields": {
+      "employe": 1,
+      "montant": 500000,
+      "date_versement": "2025-01-15"
+    }
+  },
+  {
+    "model": "salaire.salaire",
+    "pk": 2,
+    "fields": {
+      "employe": 2,
+      "montant": 300000,
+      "date_versement": "2025-02-10"
+    }
+  }
+]
