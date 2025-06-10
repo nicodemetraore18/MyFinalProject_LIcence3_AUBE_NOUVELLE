@@ -7,7 +7,9 @@ import {
   CreditCard,
   Settings,
   Briefcase,
-  ArrowLeft  // Importez l'icône ArrowLeft depuis lucide-react
+  ArrowLeft,
+  Banknote,
+  FileBarChart2
 } from "lucide-react";
 import { Bell, User } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -26,15 +28,17 @@ export default function Layout() {
   };
 
   // Navigation items
-  const navItems = [
-    { name: "Accueil", path: "/", icon: <Home size={20} /> },
-    { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
-    { name: "Employés", path: "/employes", icon: <Users size={20} /> },
-    { name: "Projets", path: "/projets", icon: <FolderKanban size={20} /> },
-    { name: "Postes", path: "/postes", icon: <Briefcase size={20} /> },
-    { name: "Paiements", path: "/paiements", icon: <CreditCard size={20} /> },
-    { name: "Paramètres", path: "/parametres", icon: <Settings size={20} /> }
-  ];
+ const navItems = [
+  { name: "Accueil", path: "/", icon: <Home size={20} /> },
+  { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
+  { name: "Employés", path: "/employes", icon: <Users size={20} /> },
+  { name: "Projets", path: "/projets", icon: <FolderKanban size={20} /> },
+  { name: "Postes", path: "/postes", icon: <Briefcase size={20} /> },
+  { name: "Paiements", path: "/paiements", icon: <CreditCard size={20} /> },
+  { name: "Banques", path: "/banques", icon: <Banknote size={20} /> }, // <-- Ajouté
+  { name: "Rapports", path: "/rapports", icon: <FileBarChart2 size={20} /> }, // <-- Ajouté
+  { name: "Paramètres", path: "/parametres", icon: <Settings size={20} /> }
+];
 
   // State pour récupérer les paramètres de l'entreprise (modèle Parametre)
   const [parametre, setParametre] = useState(null);
@@ -128,15 +132,7 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link to="/notifications" className="relative">
-              <Bell
-                size={24}
-                className="text-gray-700 cursor-pointer hover:text-blue-600 transition-all duration-200"
-              />
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                3
-              </span>
-            </Link>
+            
             <div className="flex items-center gap-4">
               <Link
                 to="/compte"
@@ -161,6 +157,13 @@ export default function Layout() {
         <main className="flex-1 p-8 overflow-y-auto bg-gray-50 transition-all duration-300">
           <Outlet />
         </main>
+         {/* Footer entreprise */}
+        <footer className="w-full bg-blue-900 text-white text-center py-3 mt-auto">
+          Solution conçue et développée par <span className="font-bold">Nicodeme TRAORE</span> &mdash; 
+          Contact : <a href="mailto:nicodemetraore18@gmail.com" className="underline">nicodemetraore18@gmail.com</a> | 
+          Tél : <a href="tel:+22675059161" className="underline">+226 75 05 91 61</a> | 
+          © {new Date().getFullYear()}
+        </footer>
       </div>
     </div>
   );

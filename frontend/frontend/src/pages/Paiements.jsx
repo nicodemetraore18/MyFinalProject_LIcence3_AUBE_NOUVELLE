@@ -47,9 +47,54 @@ export default function Paiements() {
   }, [periodeSelectionnee]);
 
   // Paiement d'un employé : redirige vers CalculerSalaire en transmettant l'ID de l'employé
-  const payerEmploye = (employeId) => {
+  const payerEmploye = async (employeId) => {
+  try {
+    console.log("Paiement de l'employé ID :", employeId, "pour la période :", periodeSelectionnee);
+
+    // Préparer le payload avec les valeurs par défaut
+    const payload = {
+      employe_id: employeId,
+      session_de_paie_id: periodeSelectionnee,
+      mode_de_paiement: "VIREMENT",
+
+      // Champs liés aux paiements par chèque
+      agence_caisse: "",
+      numero_compte_caisse: "",
+      numero_cheque: "",
+      date_cheque: null,
+
+      // Champs financiers initiaux à zéro
+      salaire_base_fiscale: 0,
+      total_indemnites: 0,
+      salaire_brut: 0,
+      salaire_brut_global: 0,
+      salaire_brut_imposable: 0,
+      total_exoneration: 0,
+      abattement_charges_pro: 0,
+      salaire_net_imposable: 0,
+      remuneration_nette: 0,
+      total_retenues: 0,
+      salaire_net_a_payer: 0,
+      vacation_net_a_payer: 0,
+      net_a_payer: 0,
+      masse_salariale_mensuelle: 0,
+
+      // Informations supplémentaires (JSON vide)
+      informations_sup: {},
+    };
+
+    // 🔥 Appel direct à `fiches-de-paie/save` pour créer ou modifier la fiche
+    await axios.post("/fiches-de-paie/save", payload);
+
+    console.log("Fiche de paie sauvegardée/modifiée avec succès !");
     navigate(`/calculer-salaire/${periodeSelectionnee}/${employeId}`);
-  };
+  } catch (error) {
+    console.error("❌ Erreur lors de la sauvegarde de la fiche de paie :", error);
+    alert("Une erreur est survenue, veuillez réessayer.");
+  }
+};
+
+
 
   // Clôture de la période
   const cloturerPaiement = async () => {

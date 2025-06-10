@@ -47,7 +47,15 @@ export function calculateExonerationResidence(statutAgent, regime, cadre, baseIn
   return Math.round(finalValue);
 }
 
-export function calculateCnssPatronale(statutAgent, regime, cadre, salaireBrutGlobal, salaireBrut) {
+export function calculateCnssPatronale(
+  statutAgent,
+  regime,
+  cadre,
+  salaireBrutGlobal,
+  salaireBrut,
+  tauxCnssPatronale = 0.16, // valeur par défaut si non fourni
+  plafondCnss = 800000
+) {
   if (!statutAgent || !regime || !cadre || !salaireBrutGlobal) return 0;
   if (
     statutAgent === "Vacataire" ||
@@ -57,10 +65,20 @@ export function calculateCnssPatronale(statutAgent, regime, cadre, salaireBrutGl
   ) {
     return 0;
   }
-  return salaireBrut <= 800000 ? Math.round(salaireBrut * 0.16) : Math.round(800000 * 0.16);
+  return salaireBrut <= plafondCnss
+    ? Math.round(salaireBrut * tauxCnssPatronale)
+    : Math.round(plafondCnss * tauxCnssPatronale);
 }
 
-export function calculateCnssEmploye(statutAgent, regime, cadre, salaireBrutGlobal, salaireBrut) {
+export function calculateCnssEmploye(
+  statutAgent,
+  regime,
+  cadre,
+  salaireBrutGlobal,
+  salaireBrut,
+  tauxCnssEmploye = 0.055,
+  plafondCnss = 800000
+) {
   if (!statutAgent || !regime || !cadre || !salaireBrutGlobal) return 0;
   if (
     statutAgent === "Vacataire" ||
@@ -70,10 +88,19 @@ export function calculateCnssEmploye(statutAgent, regime, cadre, salaireBrutGlob
   ) {
     return 0;
   }
-  return salaireBrut <= 800000 ? Math.round(salaireBrut * 0.055) : Math.round(800000 * 0.055);
+  return salaireBrut <= plafondCnss
+    ? Math.round(salaireBrut * tauxCnssEmploye)
+    : Math.round(plafondCnss * tauxCnssEmploye);
 }
 
-export function calculateCarfoPatronale(statutAgent, regime, cadre, salaireBase, soldeIndiciaire) {
+export function calculateCarfoPatronale(
+  statutAgent,
+  regime,
+  cadre,
+  salaireBase,
+  soldeIndiciaire,
+  tauxCarfoPatronale = 0.12
+) {
   if (!statutAgent || !regime || !cadre) return 0;
   if (
     statutAgent === "Vacataire" ||
@@ -84,13 +111,18 @@ export function calculateCarfoPatronale(statutAgent, regime, cadre, salaireBase,
     return 0;
   }
   return statutAgent === "Agent non FPH"
-    ? Math.round(salaireBase * 0.155)
-    : Math.round(soldeIndiciaire * 0.155);
+    ? Math.round(salaireBase * tauxCarfoPatronale)
+    : Math.round(soldeIndiciaire * tauxCarfoPatronale);
 }
 
-
-
-export function calculateCarfoEmploye(statutAgent, regime, cadre, salaireBase, soldeIndiciaire) {
+export function calculateCarfoEmploye(
+  statutAgent,
+  regime,
+  cadre,
+  salaireBase,
+  soldeIndiciaire,
+  tauxCarfoEmploye = 0.08
+) {
   if (!statutAgent || !regime || !cadre) return 0;
   if (
     statutAgent === "Vacataire" ||
@@ -101,8 +133,8 @@ export function calculateCarfoEmploye(statutAgent, regime, cadre, salaireBase, s
     return 0;
   }
   return statutAgent === "Agent non FPH"
-    ? Math.round(salaireBase * 0.08)
-    : Math.round(soldeIndiciaire * 0.08);
+    ? Math.round(salaireBase * tauxCarfoEmploye)
+    : Math.round(soldeIndiciaire * tauxCarfoEmploye);
 }
 /**
  * Calcule la retenue sur la vacation.

@@ -12,6 +12,9 @@ import Notifications from "./pages/Notifications";
 import Home from './pages/Home';
 import Postes from "./pages/Postes";
 import CalculerSalaire from "./pages/CalculerSalaire";
+import Banques from "./pages/Banques";
+import Rapports from "./pages/Rapports";
+
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -47,6 +50,8 @@ function App() {
           <Route path="notifications" element={<Notifications />} />
           <Route path="postes" element={<Postes />} />
           <Route path="calculer-salaire/:periodeId/:employeId" element={<CalculerSalaire />} />
+          <Route path="/banques" element={<Banques />} />
+          <Route path="/rapports" element={<Rapports />} />
           {/* Route de test pour BulletinPaiePrint */}
         </Route>
 

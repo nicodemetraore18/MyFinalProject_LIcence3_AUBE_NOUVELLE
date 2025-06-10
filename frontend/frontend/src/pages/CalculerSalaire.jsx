@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "../utils/axios";
 import { useSalaryResult } from "../hooks/useSalaryResult";
 import { calculateResidenceIndemnity } from "../utils/calculations";
+import { useLocation } from "react-router-dom";
 
 
 const indemnityFields = [
@@ -27,15 +28,46 @@ const indemnityFields = [
 const CalculerSalaire = () => {
   // États pour les données saisies
   const [employee, setEmployee] = useState({ detail: {} });
+  // ...après la déclaration de employee...
+const statutsSpeciaux = ["vacataire", "boursier", "plateforme"];
+const isStatutSpecial = statutsSpeciaux.includes(
+  (employee?.detail?.statut_agent || "").toLowerCase()
+);
+
+// Effet pour forcer les valeurs à 0 si statut spécial
+useEffect(() => {
+  if (isStatutSpecial) {
+    setSoldeIndiciaire(0);
+    setBaseData({ salaire_de_base: 0, vacation: baseData.vacation });
+    setPrimeData({ sursalaire: 0, prime_anciennete: 0 });
+    setIndemniteData((prev) =>
+      Object.fromEntries(Object.keys(prev).map((k) => [k, 0]))
+    );
+  }
+  // eslint-disable-next-line
+}, [isStatutSpecial]);
   const [parametre, setParametre] = useState(null);
   const [baseData, setBaseData] = useState({ salaire_de_base: 0, vacation: 0 });
   const [primeData, setPrimeData] = useState({ sursalaire: 0, prime_anciennete: 0 });
   const [soldeIndiciaire, setSoldeIndiciaire] = useState(0);
-  const [heureData, setHeureData] = useState({
-    nombre_heures: 0,
-    taux: 0,
-    montant: 0,
-  });
+ // ...après la déclaration de setHeureData...
+const [heureData, setHeureData] = useState({
+  nombre_heures: 0,
+  taux: 0,
+  montant: 0,
+});
+
+// Ajoute cet effet ici :
+useEffect(() => {
+  setHeureData((prev) => ({
+    ...prev,
+    montant:
+      prev.nombre_heures && prev.taux
+        ? Number((prev.nombre_heures * prev.taux).toFixed(2))
+        : 0,
+  }));
+}, [heureData.nombre_heures, heureData.taux]);
+// ...le reste du code...
   const [indemniteData, setIndemniteData] = useState(
     indemnityFields.reduce((acc, field) => {
       acc[field] = 0;
@@ -176,8 +208,9 @@ const CalculerSalaire = () => {
   };
   
   // Fonction de sauvegarde
-  const handleSave = () => {
-    const calcResult = salaryResult;
+  const handleSave = async () => {
+  try {
+    const calcResult = salaryResult; // calcResult contient taxes et securite_social déjà calculés
     const payload = {
       employe_id: employee?.id || null,
       session_de_paie_id: periodeId || null,
@@ -193,7 +226,7 @@ const CalculerSalaire = () => {
       heure_supp: {
         nombre_heures: isNaN(heureData.nombre_heures) ? 0 : heureData.nombre_heures,
         taux: isNaN(heureData.taux) ? 0 : heureData.taux,
-        montant: isNaN(heureData.montant) ? "0.00" : heureData.montant.toFixed(2),
+        montant: isNaN(heureData.montant) ? 0 : Number(heureData.montant.toFixed(2)),
       },
       indemnites: {
         values: Object.keys(indemniteData).reduce((acc, key) => {
@@ -211,28 +244,25 @@ const CalculerSalaire = () => {
       }, {}),
       synthese: calcResult,
     };
-  
+
     console.log("Payload envoyé :", payload);
-  
-    axios
-      .post("fiches-de-paie/save", payload)
-      .then((response) => {
-        console.log("Réponse de sauvegarde :", response.data);
-        return axios.post(`paiements/${payload.session_de_paie_id}/payer/`, { employeId: payload.employe_id });
-      })
-      .then((response) => {
-        console.log("Paiement mis à jour :", response.data);
-      })
-      .catch((error) => {
-        console.error("Erreur lors du processus :", error);
-        if (error.response) {
-          console.error("Détails de l'erreur :", error.response.data);
-        }
-      });
-  };
-  const handleDownload = (employeId) => {
-  window.open(`http://127.0.0.1:8000/api/payslip/${employeId}/`, "_blank");
+    await axios.post("/fiches-de-paie/save", payload);
+
+    alert("Fiche de paie enregistrée ou mise à jour avec succès !");
+  } catch (error) {
+    console.error("❌ Erreur lors de la sauvegarde :", error);
+    alert("Une erreur est survenue, veuillez réessayer.");
+  }
 };
+
+
+  const location = useLocation();
+  const periodeSelectionnee = location.state?.periodeSelectionnee || null;
+
+ const handleDownload = (employeId, periodeId) => {
+  window.open(`http://127.0.0.1:8000/api/payslip/${periodeId}/${employeId}/`, "_blank");
+};
+
 
 
 
@@ -241,7 +271,8 @@ const CalculerSalaire = () => {
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center">
           {employee
-            ? `Calculer Salaire pour ${employee.nom} ${employee.prenom} – Projet : ${employee.projet?.nom || "Non défini"}`
+            ? `Calculer Salaire pour ${employee.nom} ${employee.prenom} ` +
+              `(Statut : ${employee.detail?.statut_agent || "Non défini"}) – Projet : ${employee.projet?.nom || "Non défini"}`
             : "Chargement de l'employé..."}
         </h1>
 
@@ -252,22 +283,22 @@ const CalculerSalaire = () => {
             <div className="flex items-center">
               <label className="w-48">Solde Indiciaire :</label>
               <input
-                name="solde_indiciaire"
-                type="text"
-                value={isNaN(soldeIndiciaire) ? "" : soldeIndiciaire}
-                readOnly
-                onChange={handleBaseChange}
-                className="ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300"
-              />
+              name="solde_indiciaire"
+              type="text"
+              value={isStatutSpecial ? 0 : isNaN(soldeIndiciaire) ? "" : soldeIndiciaire}
+              readOnly
+              className={`ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300 ${isStatutSpecial ? "bg-gray-200" : ""}`}
+            />
             </div>
             <div className="flex items-center">
               <label className="w-48">Salaire de Base :</label>
-              <input
+                <input
                 type="number"
                 name="salaire_de_base"
-                value={isNaN(baseData.salaire_de_base) ? "" : baseData.salaire_de_base}
+                value={isStatutSpecial ? 0 : isNaN(baseData.salaire_de_base) ? "" : baseData.salaire_de_base}
                 onChange={handleBaseChange}
-                className="ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300"
+                readOnly={isStatutSpecial}
+                className={`ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300 ${isStatutSpecial ? "bg-gray-200" : ""}`}
               />
             </div>
             <div className="flex items-center">
@@ -292,20 +323,22 @@ const CalculerSalaire = () => {
               <input
                 type="number"
                 name="sursalaire"
-                value={isNaN(primeData.sursalaire) ? "" : primeData.sursalaire}
+                value={isStatutSpecial ? 0 : isNaN(primeData.sursalaire) ? "" : primeData.sursalaire}
                 onChange={handlePrimeChange}
-                className="ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300"
+                readOnly={isStatutSpecial}
+                className={`ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300 ${isStatutSpecial ? "bg-gray-200" : ""}`}
               />
             </div>
             <div className="flex items-center">
               <label className="w-48">Prime d'ancienneté :</label>
-              <input
-                type="number"
-                name="prime_anciennete"
-                value={isNaN(primeData.prime_anciennete) ? "" : primeData.prime_anciennete}
-                onChange={handlePrimeChange}
-                className="ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300"
-              />
+             <input
+              type="number"
+              name="prime_anciennete"
+              value={isStatutSpecial ? 0 : isNaN(primeData.prime_anciennete) ? "" : primeData.prime_anciennete}
+              onChange={handlePrimeChange}
+              readOnly={isStatutSpecial}
+              className={`ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300 ${isStatutSpecial ? "bg-gray-200" : ""}`}
+            />
             </div>
           </div>
         </div>
@@ -387,9 +420,10 @@ const CalculerSalaire = () => {
                     <input
                       type="number"
                       name={field}
-                      value={isNaN(indemniteData[field]) ? "" : indemniteData[field]}
-                      readOnly
-                      className="ml-3 border rounded p-1 w-32 bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-300"
+                      value={isStatutSpecial ? 0 : isNaN(indemniteData[field]) ? "" : indemniteData[field]}
+                      onChange={handleIndemniteChange}
+                      readOnly={isStatutSpecial}
+                      className={`ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300 ${isStatutSpecial ? "bg-gray-200" : ""}`}
                     />
                     <div className="flex items-center ml-4">
                       <input
@@ -419,9 +453,10 @@ const CalculerSalaire = () => {
                   <input
                     type="number"
                     name={field}
-                    value={isNaN(indemniteData[field]) ? "" : indemniteData[field]}
+                    value={isStatutSpecial ? 0 : isNaN(indemniteData[field]) ? "" : indemniteData[field]}
                     onChange={handleIndemniteChange}
-                    className="ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300"
+                    readOnly={isStatutSpecial}
+                    className={`ml-3 border rounded p-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-300 ${isStatutSpecial ? "bg-gray-200" : ""}`}
                   />
                   <div className="flex items-center ml-4">
                     <input
@@ -618,11 +653,23 @@ const CalculerSalaire = () => {
             Retour
           </button>
           <button
-            onClick={() => handleDownload(employeId)}
+            onClick={() => handleDownload(employeId, periodeSelectionnee || periodeId)}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow"
           >
             Télécharger Bulletin de Paie
           </button>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            Pour toute question, veuillez contacter le support technique.
+          </p>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm">
+            © 2023 Votre Entreprise. Tous droits réservés.
+          </p>
          
       </div>
 

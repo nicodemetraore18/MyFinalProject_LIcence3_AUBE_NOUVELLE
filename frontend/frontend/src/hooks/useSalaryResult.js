@@ -64,35 +64,40 @@ export const useSalaryResult = ({
       salaire_brut_local + (Number(baseData.vacation) || 0);
 
     // ---- Contributions sociales ----
-    const cnss_patronale_local = calculateCnssPatronale(
-      employee.detail.statut_agent,
-      employee.detail.regime_prevoyance_sociale,
-      employee.detail.cadre,
-      salaire_brut_global_local,
-      salaire_brut_local
-    );
-    const cnss_employe_local = calculateCnssEmploye(
-      employee.detail.statut_agent,
-      employee.detail.regime_prevoyance_sociale,
-      employee.detail.cadre,
-      salaire_brut_global_local,
-      salaire_brut_local
-    );
-    const carfo_patronale_local = calculateCarfoPatronale(
-      employee.detail.statut_agent,
-      employee.detail.regime_prevoyance_sociale,
-      employee.detail.cadre,
-      totalBase,
-      soldeIndiciaire
-    );
-    const carfo_employe_local = calculateCarfoEmploye(
-      employee.detail.statut_agent,
-      employee.detail.regime_prevoyance_sociale,
-      employee.detail.cadre,
-      totalBase,
-      soldeIndiciaire
-    );
-
+   // ...existing code...
+const cnss_patronale_local = calculateCnssPatronale(
+  employee.detail.statut_agent,
+  employee.detail.regime_prevoyance_sociale,
+  employee.detail.cadre,
+  salaire_brut_global_local,
+  salaire_brut_local,
+  parametre ? parametre.cnss_part_patronale : 0 // PAS de division par 100
+);
+const cnss_employe_local = calculateCnssEmploye(
+  employee.detail.statut_agent,
+  employee.detail.regime_prevoyance_sociale,
+  employee.detail.cadre,
+  salaire_brut_global_local,
+  salaire_brut_local,
+  parametre ? parametre.cnss_part_employe : 0 // PAS de division par 100
+);
+const carfo_patronale_local = calculateCarfoPatronale(
+  employee.detail.statut_agent,
+  employee.detail.regime_prevoyance_sociale,
+  employee.detail.cadre,
+  totalBase,
+  soldeIndiciaire,
+  parametre ? parametre.carfo_part_patronale : 0 // PAS de division par 100
+);
+const carfo_employe_local = calculateCarfoEmploye(
+  employee.detail.statut_agent,
+  employee.detail.regime_prevoyance_sociale,
+  employee.detail.cadre,
+  totalBase,
+  soldeIndiciaire,
+  parametre ? parametre.carfo_part_employe : 0 // PAS de division par 100
+);
+// ...existing code...
     // ---- Exonérations ----
     const localExoLogement = calculateExoneration(
       employee.detail.statut_agent,

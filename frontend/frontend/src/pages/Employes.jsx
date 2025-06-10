@@ -6,12 +6,29 @@ export default function Employes() {
   const [employes, setEmployes] = useState([]);
   const [postes, setPostes] = useState([]);
   const [projets, setProjets] = useState([]);
-  const [banks, setBanks] = useState([]); // Pour les banques
+  const [banks, setBanks] = useState([]);
   const [selectedEmploye, setSelectedEmploye] = useState(null);
+  const [search, setSearch] = useState("");
   const { register, handleSubmit, reset, watch } = useForm();
 
   // Surveille "statut_agent" pour déterminer le régime prévoyance sociale
   const statutAgent = watch("statut_agent") || "";
+  const statutsSpeciaux = ["Vacataire", "Boursier", "Plateforme"];
+  const isStatutSpecial = statutsSpeciaux.includes(statutAgent);
+
+  useEffect(() => {
+    if (isStatutSpecial) {
+      reset({
+        ...watch(),
+        cadre: "",
+        indice: "",
+        nombre_charges_iuts: ""
+      });
+    }
+    // eslint-disable-next-line
+  }, [isStatutSpecial]);
+  
+  // ...le reste du code...
   const computedRegime =
     statutAgent === "Agent non FPH"
       ? "CNSS"
@@ -38,10 +55,12 @@ export default function Employes() {
   // Réinitialisation du formulaire à la sélection d'un employé
   useEffect(() => {
     if (selectedEmploye) {
-      reset({
+      console.log("DETAIL:", selectedEmploye.detail); // Ajoute ceci pour debug
+
+     reset({
         nom: selectedEmploye.nom,
         prenom: selectedEmploye.prenom,
-        numero_identite: selectedEmploye.numero_identite || "", // nouveau champ
+        numero_identite: selectedEmploye.numero_identite || "",
         poste_id: selectedEmploye.poste.id,
         projet_id: selectedEmploye.projet.id,
         statut_agent: selectedEmploye.detail?.statut_agent || "",
@@ -58,34 +77,34 @@ export default function Employes() {
           selectedEmploye.detail?.indice !== undefined
             ? String(selectedEmploye.detail.indice)
             : "",
-        // Nouveaux champs dans DetailEmploye
         numero_compte: selectedEmploye.detail?.numero_compte || "",
         intitule_compte: selectedEmploye.detail?.intitule_compte || "",
-        banque_id: selectedEmploye.detail?.banque?.id || ""
+        banque_id: selectedEmploye.detail?.banque
+          ? String(selectedEmploye.detail.banque)
+          : ""
       });
     }
   }, [selectedEmploye, reset]);
 
   const onSubmit = (data) => {
     const payload = {
-      nom: data.nom,
-      prenom: data.prenom,
-      numero_identite: data.numero_identite, // nouveau champ
-      poste_id: data.poste_id,
-      projet_id: data.projet_id,
-      detail: {
-        statut_agent: data.statut_agent,
-        regime_prevoyance_sociale: computedRegime,
-        numero_immatriculation: data.numero_immatriculation,
-        nombre_charges_iuts: data.nombre_charges_iuts,
-        cadre: data.cadre ? parseInt(data.cadre) : null,
-        indice: data.indice,
-        // Ajout des nouveaux champs
-        numero_compte: data.numero_compte,
-        intitule_compte: data.intitule_compte,
-        banque: data.banque_id
-      }
-    };
+        nom: data.nom,
+        prenom: data.prenom,
+        numero_identite: data.numero_identite,
+        poste_id: data.poste_id,
+        projet_id: data.projet_id,
+        detail: {
+          statut_agent: data.statut_agent,
+          regime_prevoyance_sociale: computedRegime,
+          numero_immatriculation: data.numero_immatriculation,
+          nombre_charges_iuts: isStatutSpecial ? 0 : (data.nombre_charges_iuts === "" ? 0 : Number(data.nombre_charges_iuts)),
+          cadre: data.cadre === "" ? null : parseInt(data.cadre),
+          indice: isStatutSpecial ? 0 : (data.indice === "" ? 0 : Number(data.indice)),
+          numero_compte: data.numero_compte,
+          intitule_compte: data.intitule_compte,
+          banque: data.banque_id
+        }
+      };
 
     if (selectedEmploye) {
       axios
@@ -97,9 +116,12 @@ export default function Employes() {
           setSelectedEmploye(null);
           reset();
         })
-        .catch((error) =>
-          console.error("Erreur lors de la modification :", error)
-        );
+        .catch((error) => {
+          console.error("Erreur lors de la modification :", error);
+          if (error.response) {
+            console.log("Détail de l'erreur backend :", error.response.data);
+          }
+        });
     } else {
       axios
         .post("http://localhost:8000/api/employes/", payload, {
@@ -131,6 +153,7 @@ export default function Employes() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-gray-800">Employés</h1>
+      
 
       {/* Formulaire d'ajout ou modification */}
       <form
@@ -215,24 +238,32 @@ export default function Employes() {
               {...register("nombre_charges_iuts")}
               placeholder="Nombre de charges IUTS"
               type="number"
-              className="p-2 border rounded"
+              className={`p-2 border rounded ${isStatutSpecial ? "bg-gray-200" : ""}`}
+              readOnly={isStatutSpecial}
             />
             <div className="flex flex-col">
               <label htmlFor="cadre" className="text-gray-700 mb-1">
                 Catégorie d'agents (Cadre)
               </label>
-              <select {...register("cadre")} id="cadre" className="p-2 border rounded" required>
+              <select
+                {...register("cadre")}
+                id="cadre"
+                className={`p-2 border rounded ${isStatutSpecial ? "bg-gray-200" : ""}`}
+                disabled={isStatutSpecial}
+                required={!isStatutSpecial}
+              >
                 <option value="">-- Sélectionner la catégorie --</option>
                 <option value="1">Cadre supérieur (1)</option>
                 <option value="2">Cadre inférieur (2)</option>
               </select>
             </div>
-            <input
+           <input
               {...register("indice")}
               placeholder="Indice"
               type="number"
               step="0.01"
-              className="p-2 border rounded"
+              className={`p-2 border rounded ${isStatutSpecial ? "bg-gray-200" : ""}`}
+              readOnly={isStatutSpecial}
             />
 
             {/* Nouveaux champs de coordonnées bancaires */}
@@ -264,6 +295,15 @@ export default function Employes() {
           {selectedEmploye ? "Modifier" : "Ajouter"}
         </button>
       </form>
+      <div className="mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher par nom..."
+          className="p-2 border rounded w-64"
+        />
+      </div>
 
       {/* Table des employés */}
       <div className="overflow-x-auto">
@@ -278,17 +318,28 @@ export default function Employes() {
             </tr>
           </thead>
           <tbody>
-            {employes.map((emp) => (
-              <tr key={emp.id} className="border-t hover:bg-gray-50">
+           {employes
+              .filter(emp =>
+                emp.nom.toLowerCase().includes(search.toLowerCase())
+              )
+              .map((emp) => (
+              <tr
+                key={emp.id}
+                className={`border-t hover:bg-blue-100 cursor-pointer ${selectedEmploye && selectedEmploye.id === emp.id ? "bg-blue-200" : ""}`}
+                onClick={() => setSelectedEmploye(emp)}
+              >
                 <td className="py-3 px-6">{emp.nom}</td>
                 <td className="py-3 px-6">{emp.prenom}</td>
                 <td className="py-3 px-6">{emp.poste?.nom}</td>
                 <td className="py-3 px-6">{emp.projet?.nom}</td>
                 <td className="py-3 px-6">
-                  <button className="text-blue-500 hover:underline" onClick={() => handleEdit(emp)}>
-                    Modifier
-                  </button>
-                  <button className="text-red-500 hover:underline ml-4" onClick={() => handleDelete(emp.id)}>
+                  <button
+                    className="text-red-500 hover:underline ml-4"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleDelete(emp.id);
+                    }}
+                  >
                     Supprimer
                   </button>
                 </td>

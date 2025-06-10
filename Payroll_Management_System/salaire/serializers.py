@@ -45,6 +45,9 @@ class DetailEmployeSerializer(serializers.ModelSerializer):
             'nombre_charges_iuts',
             'cadre',
             'indice',
+            'numero_compte',        # <-- Ajoute ceci
+            'intitule_compte',      # <-- Ajoute ceci
+            'banque',               # <-- Ajoute ceci
         ]
 
 

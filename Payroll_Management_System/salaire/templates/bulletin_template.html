@@ -5,8 +5,14 @@
     <meta charset="UTF-8">
     <title>Bulletin de Paie - Centre MURAZ</title>
     <style>
-        body { font-family: "Arial", sans-serif; padding: 20px; }
-        .container { width: 100%; margin: auto; }
+        @page {
+            margin-left: 15px;
+            margin-right: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        body { font-family: "Arial", sans-serif; padding: 0; }
+        .container { width: 100%; margin: 0; }
         h1, h2 { text-align: center; }
         .header { text-align: center; margin-bottom: 20px; }
         .header img { width: 120px; }
@@ -16,81 +22,138 @@
         .info-section, .salary-section { margin-top: 20px; }
         .footer { text-align: center; margin-top: 50px; font-size: 12px; }
         .info-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-.info-table td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-}
-
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .info-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-    {% if logo_url %}
-        <img src="{{ logo_url }}" alt="Logo de {{ parametres.nom_entreprise }}" width="120">
-    {% else %}
-        <p>Aucun logo disponible</p>
-    {% endif %}
-    <h1>{{ parametres.nom_entreprise }} - BULLETIN DE PAIE</h1>
-</div>
-
-
+            {% if logo_url %}
+                <img src="{{ logo_url }}" alt="Logo de {{ parametres.nom_entreprise }}" width="120">
+            {% else %}
+                <p>Aucun logo disponible</p>
+            {% endif %}
+            <h1>{{ parametres.nom_entreprise }} - BULLETIN DE PAIE</h1>
+        </div>
 
         <h2>Informations du Bulletin</h2>
-<table class="info-table">
-    <tr>
-        <td><strong>PÉRIODE PAYÉE:</strong> {{ fiche.periode }}</td>
-        <td><strong>DATE DE TRAITEMENT:</strong> {{ fiche.date_traitement }}</td>
-    </tr>
-    <tr>
-        <td><strong>Nom & Prénoms:</strong> {{ employe.nom }} {{ employe.prenom }}</td>
-        <td><strong>Emploi:</strong> {{ employe.poste }}</td>
-    </tr>
-    <tr>
-        <td><strong>Statut Agent:</strong> {{ employe.statut }}</td>
-        <td><strong>Mode de Paiement:</strong> {{ fiche.mode_paiement }}</td>
-    </tr>
-    <tr>
-        <td><strong>Numéro de Compte:</strong> {{ fiche.numero_compte }}</td>
-        <td><strong>Intitulé du Compte:</strong> {{ fiche.intitule_compte }}</td>
-    </tr>
-</table>
-        <h2>DESIGNATION DES ÉLÉMENTS DE VACATION</h2>
-<table class="salary-section">
-    <tr><th>Élément</th><th>Avoirs (FCFA)</th><th>Retenues (FCFA)</th></tr>
+        <table class="info-table">
+            <tr>
+                <td><strong>PÉRIODE PAYÉE:</strong>
+                    {% if fiche.session_de_paie  %}
+                        {{ fiche.session_de_paie|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td><strong>DATE DE TRAITEMENT:</strong>
+                    {% if fiche.created_at %}
+                        {{ fiche.created_at|date:"d/m/Y" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td><strong>Nom & Prénoms:</strong> {{ employe.nom|default_if_none:"-" }} {{ employe.prenom|default_if_none:"-" }}</td>
+                <td><strong>Emploi:</strong>
+                    {% if employe.poste %}
+                        {{ employe.poste|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><strong>NCNIB:</strong> {{ employe.numero_identite|default_if_none:"-" }}</td>
+                <td><strong>Projet:</strong>
+                    {% if employe.projet and employe.projet.nom %}
+                        {{ employe.projet.nom|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td><strong>Catégorie:</strong>
+                    {% if employe_detail %}
+                        {{ employe_detail.cadre|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+               
+            </tr>
+            <tr>
+                <td><strong>Statut Agent:</strong>
+                    {% if employe_detail %}
+                        {{ employe_detail.statut_agent|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td><strong>Mode de Paiement:</strong>
+                    {{ fiche.mode_de_paiement|default_if_none:"-" }}
+                </td>
+                <td>
+                    <strong>Numéro de Compte:</strong>
+                    {% if employe.detail and employe.detail.numero_compte %}
+                        {{ employe.detail.numero_compte|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>Intitulé du Compte:</strong>
+                    {% if employe.detail and employe.detail.intitule_compte %}
+                        {{ employe.detail.intitule_compte|default_if_none:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
 
-    <!-- Avoirs -->
-    {% for avoir in avoirs %}
-    <tr>
-        <td>{{ avoir.nom }}</td>
-        <td>{{ avoir.montant }}</td>
-        <td>#N/A</td>
-    </tr>
-    {% endfor %}
+        <h2>Détail de la Paie</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>DESIGNATION DES ÉLÉMENTS</th>
+                    <th>AVOIRS (FCFA)</th>
+                    <th>RETENUES (FCFA)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in elements %}
+                    <tr>
+                        <td>{{ row.designation }}</td>
+                        <td>{% if row.avoirs %}{{ row.avoirs }}{% endif %}</td>
+                        <td>{% if row.retenues %}{{ row.retenues }}{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <!-- Retenues -->
-    {% for retenue in retenues %}
-    <tr>
-        <td>{{ retenue.nom }}</td>
-        <td>#N/A</td>
-        <td>{{ retenue.montant }}</td>
-    </tr>
-    {% endfor %}
-
-    <!-- Totaux -->
-    <tr><td><strong>Salaire Net à Payer</strong></td><td>#N/A</td><td><strong>{{ totaux.salaire_net }}</strong></td></tr>
-    <tr><td><strong>Vacation Net à Payer</strong></td><td>#N/A</td><td><strong>{{ totaux.vacation_net }}</strong></td></tr>
-    <tr><td><strong>Net à Payer</strong></td><td>#N/A</td><td><strong>{{ totaux.net_a_payer }}</strong></td></tr>
-</table>
-
-
-       
+        <h2>Totaux</h2>
+        <table>
+            <tr>
+                <td><strong>Salaire Net à Payer</strong></td>
+                <td><strong>{{ totaux.salaire_net|default_if_none:"-" }}</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Vacation Net à Payer</strong></td>
+                <td><strong>{{ totaux.vacation_net|default_if_none:"-" }}</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Net à Payer</strong></td>
+                <td><strong>{{ totaux.net_a_payer|default_if_none:"-" }}</strong></td>
+            </tr>
+        </table>
     </div>
 </body>
 <footer class="footer">

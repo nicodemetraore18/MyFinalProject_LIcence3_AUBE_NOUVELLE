@@ -30,6 +30,7 @@ from .views import (
     CotisationViewSet,
     RemboursementViewSet,
     generate_payslip_pdf,
+    RapportView,
 )
 
 router = DefaultRouter()
@@ -69,7 +70,8 @@ urlpatterns = [
     path('paiements/', all_paiements, name='all_paiements'),
     path('paiements/periodes/<int:periode_id>/cloturer/', cloturer_periode, name='cloturer_periode'),
     path("fiches-de-paie/save", SaveFicheDePaieView.as_view(), name="save-fiche-de-paie"),
-    path("api/payslip/<int:periode_id>/<int:employe_id>/", generate_payslip_pdf, name="generate_payslip_pdf")
+    path("payslip/<int:periode_id>/<int:employe_id>/", generate_payslip_pdf, name="generate_payslip_pdf"),
+    path('rapports/', RapportView.as_view(), name='rapports'),
 
 ]
 
