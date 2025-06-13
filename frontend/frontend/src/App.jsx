@@ -14,6 +14,7 @@ import Postes from "./pages/Postes";
 import CalculerSalaire from "./pages/CalculerSalaire";
 import Banques from "./pages/Banques";
 import Rapports from "./pages/Rapports";
+import Administration from "./pages/Administration";
 
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
@@ -52,6 +53,7 @@ function App() {
           <Route path="calculer-salaire/:periodeId/:employeId" element={<CalculerSalaire />} />
           <Route path="/banques" element={<Banques />} />
           <Route path="/rapports" element={<Rapports />} />
+          <Route path="administration" element={<Administration />} />
           {/* Route de test pour BulletinPaiePrint */}
         </Route>
 

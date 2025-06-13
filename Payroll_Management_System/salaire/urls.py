@@ -25,12 +25,13 @@ from .views import (
     HeureSupplementaireViewSet,
     IndemniteViewSet,
     SecuriteSocialViewSet,
-    ExonerationViewSet,
     TaxesViewSet,
     CotisationViewSet,
     RemboursementViewSet,
     generate_payslip_pdf,
     RapportView,
+    create_user,  # Assurez-vous d'importer votre nouvelle vue ici
+    users_view,
 )
 
 router = DefaultRouter()
@@ -46,7 +47,6 @@ router.register('primes', PrimeViewSet, basename='primes')
 router.register('heures-sup', HeureSupplementaireViewSet, basename='heures-sup')
 router.register('indemnites', IndemniteViewSet, basename='indemnites')
 router.register('securite-social', SecuriteSocialViewSet, basename='securite-social')
-router.register('exonerations', ExonerationViewSet, basename='exonerations')
 router.register('taxes', TaxesViewSet, basename='taxes')
 router.register('cotisations', CotisationViewSet, basename='cotisations')
 router.register('remboursements', RemboursementViewSet, basename='remboursements')
@@ -56,6 +56,7 @@ urlpatterns = [
     path('paiements/<int:periode_id>/payer/', effectuer_paiement, name='effectuer_paiement'),
 
     # Ici, vous pouvez ajouter d'autres endpoints personnalisés si besoin
+    path('users/', users_view, name='users_view'),  # Votre nouvel endpoint
 
     # Ensuite, incluez les routes du routeur
     path('', include(router.urls)),

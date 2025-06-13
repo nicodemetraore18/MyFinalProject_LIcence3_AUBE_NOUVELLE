@@ -1,7 +1,7 @@
 from django.utils import timezone
 import logging
 from rest_framework import viewsets, generics, permissions, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,22 +17,34 @@ from django.conf import settings
 from django.utils.html import escape
 from .models import (
     User, Banque, Projet, Poste, Employe, DetailEmploye,FicheDePaie,
-    ComposantBase, Prime, HeureSupplementaire, Indemnite, SecuriteSocial,
-    Exoneration, Taxes, Cotisation, Remboursement,
-    PeriodePaiement, FicheDePaie, SignaturePaie, Paiement, Parametre
+    ComposantBase, Prime, HeureSupplementaire, Indemnite, SecuriteSocial, Taxes, Cotisation, Remboursement,
+    PeriodePaiement, FicheDePaie, Paiement, Parametre
 )
 from .serializers import (
     ProjetSerializer, PosteSerializer, EmployeSerializer, FicheDePaieSerializer,
     UserSerializer, ParametreSerializer, PasswordChangeSerializer,
     MyTokenObtainPairSerializer, PeriodePaiementSerializer, PaiementSerializer,
      BanqueSerializer,
-    # Vous pouvez ajouter ici les serializers pour les nouveaux modèles si besoin :
      ComposantBaseSerializer, PrimeSerializer, HeureSupplementaireSerializer,
-     IndemniteSerializer, SecuriteSocialSerializer, ExonerationSerializer,
+     IndemniteSerializer, SecuriteSocialSerializer,
      TaxesSerializer, CotisationSerializer, RemboursementSerializer
 )
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from decimal import Decimal, InvalidOperation
+
+def safe_decimal(value):
+    try:
+        if value in [None, "", "None", "null"]:
+            return Decimal("0.00")
+        if isinstance(value, bool):
+            return Decimal("0.00")
+        if isinstance(value, (int, float, Decimal)):
+            return Decimal(str(value))
+        value_str = str(value).replace(",", ".").strip()
+        return Decimal(value_str)
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0.00")
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -149,6 +161,8 @@ class MeView(APIView):
         return Response({
             "username": user.username,
             "email": user.email,
+            "role": getattr(user, "role", "user"),
+            "pages": getattr(user, "pages", []),
         })
 
     def put(self, request):
@@ -220,9 +234,9 @@ class SecuriteSocialViewSet(viewsets.ModelViewSet):
      queryset = SecuriteSocial.objects.all()
      serializer_class = SecuriteSocialSerializer
 
-class ExonerationViewSet(viewsets.ModelViewSet):
-     queryset = Exoneration.objects.all()
-     serializer_class = ExonerationSerializer
+# class ExonerationViewSet(viewsets.ModelViewSet):
+#      queryset = Exoneration.objects.all()
+#      serializer_class = ExonerationSerializer
 
 class TaxesViewSet(viewsets.ModelViewSet):
      queryset = Taxes.objects.all()
@@ -249,40 +263,35 @@ class SaveFicheDePaieView(APIView):
         logger.info("Payload reçu: %s", data)
 
         try:
-            # Récupère ou crée la fiche de paie principale
             fiche, created = FicheDePaie.objects.get_or_create(
                 employe_id=data.get("employe_id"),
                 session_de_paie_id=data.get("session_de_paie_id"),
                 defaults={
                     "mode_de_paiement": data.get("mode_de_paiement", "VIREMENT"),
-                    # Initialisation depuis composant_base en cas de création
-                    "salaire_base_fiscale": data.get("composant_base", {}).get("salaire_de_base", 0),
-                    "vacation_net_a_payer": data.get("composant_base", {}).get("vacation", 0),
-                    # Pour le moment, on place aussi un éventuel salaire_net si présent dans synthese
-                    "salaire_net_a_payer": data.get("synthese", {}).get("salaire_net", 0),
+                    "salaire_base_fiscale": safe_decimal(data.get("composant_base", {}).get("salaire_de_base", 0)),
+                    "vacation_net_a_payer": safe_decimal(data.get("composant_base", {}).get("vacation", 0)),
+                    "salaire_net_a_payer": safe_decimal(data.get("synthese", {}).get("salaire_net", 0)),
                 }
             )
 
             # Mise à jour des champs principaux avec les données de synthèse
             synthese = data.get("synthese", {})
             if synthese:
-                fiche.salaire_base_fiscale = synthese.get("salaire_base_fiscale", fiche.salaire_base_fiscale)
-                fiche.total_indemnites = synthese.get("total_indemnites", fiche.total_indemnites)
-                fiche.salaire_brut = synthese.get("salaire_brut", fiche.salaire_brut)
-                fiche.salaire_brut_global = synthese.get("salaire_brut_global", fiche.salaire_brut_global)
-                fiche.salaire_brut_imposable = synthese.get("salaire_brut_imposable", fiche.salaire_brut_imposable)
-                fiche.total_exoneration = synthese.get("total_exoneration", fiche.total_exoneration)
-                fiche.abattement_charges_pro = synthese.get("abattement_charges_pro", fiche.abattement_charges_pro)
-                fiche.salaire_net_imposable = synthese.get("salaire_net_imposable", fiche.salaire_net_imposable)
-                fiche.remuneration_nette = synthese.get("remuneration_nette", fiche.remuneration_nette)
-                fiche.total_retenues = synthese.get("total_retenues", fiche.total_retenues)
-                fiche.salaire_net_a_payer = synthese.get("salaire_net_a_payer", fiche.salaire_net_a_payer)
-                fiche.vacation_net_a_payer = synthese.get("vacation_net_a_payer", fiche.vacation_net_a_payer)
-                fiche.net_a_payer = synthese.get("net_a_payer", fiche.net_a_payer)
-                fiche.masse_salariale_mensuelle = synthese.get("masse_salariale_mensuelle", fiche.masse_salariale_mensuelle)
+                fiche.salaire_base_fiscale = safe_decimal(synthese.get("salaire_base_fiscale", fiche.salaire_base_fiscale))
+                fiche.total_indemnites = safe_decimal(synthese.get("total_indemnites", fiche.total_indemnites))
+                fiche.salaire_brut = safe_decimal(synthese.get("salaire_brut", fiche.salaire_brut))
+                fiche.salaire_brut_global = safe_decimal(synthese.get("salaire_brut_global", fiche.salaire_brut_global))
+                fiche.salaire_brut_imposable = safe_decimal(synthese.get("salaire_brut_imposable", fiche.salaire_brut_imposable))
+                fiche.total_exoneration = safe_decimal(synthese.get("total_exoneration", fiche.total_exoneration))
+                fiche.abattement_charges_pro = safe_decimal(synthese.get("abattement_charges_pro", fiche.abattement_charges_pro))
+                fiche.salaire_net_imposable = safe_decimal(synthese.get("salaire_net_imposable", fiche.salaire_net_imposable))
+                fiche.remuneration_nette = safe_decimal(synthese.get("remuneration_nette", fiche.remuneration_nette))
+                fiche.total_retenues = safe_decimal(synthese.get("total_retenues", fiche.total_retenues))
+                fiche.salaire_net_a_payer = safe_decimal(synthese.get("salaire_net_a_payer", fiche.salaire_net_a_payer))
+                fiche.vacation_net_a_payer = safe_decimal(synthese.get("vacation_net_a_payer", fiche.vacation_net_a_payer))
+                fiche.net_a_payer = safe_decimal(synthese.get("net_a_payer", fiche.net_a_payer))
+                fiche.masse_salariale_mensuelle = safe_decimal(synthese.get("masse_salariale_mensuelle", fiche.masse_salariale_mensuelle))
                 fiche.save()
-
-            # Mise à jour ou création des objets liés :
 
             # Composant Base
             base_data = data.get("composant_base", {})
@@ -290,8 +299,8 @@ class SaveFicheDePaieView(APIView):
                 ComposantBase.objects.update_or_create(
                     fiche=fiche,
                     defaults={
-                        "salaire_de_base": base_data.get("salaire_de_base", 0),
-                        "vacation": base_data.get("vacation", 0),
+                        "salaire_de_base": safe_decimal(base_data.get("salaire_de_base", 0)),
+                        "vacation": safe_decimal(base_data.get("vacation", 0)),
                     }
                 )
 
@@ -301,20 +310,28 @@ class SaveFicheDePaieView(APIView):
                 Prime.objects.update_or_create(
                     fiche=fiche,
                     defaults={
-                        "sursalaire": prime_data.get("sursalaire", 0),
-                        "prime_anciennete": prime_data.get("prime_anciennete", 0)
+                        "sursalaire": safe_decimal(prime_data.get("sursalaire", 0)),
+                        "prime_anciennete": safe_decimal(prime_data.get("prime_anciennete", 0))
                     }
                 )
 
             # Heure Supplémentaire
             heure_data = data.get("heure_supp", {})
+            logger.error(f"HeureSupp brut reçu : {heure_data}")
+
+            nombre_heures = safe_decimal(heure_data.get("nombre_heures", 0))
+            taux = safe_decimal(heure_data.get("taux", 0))
+            montant = safe_decimal(heure_data.get("montant", 0))
+
+            logger.error(f"HeureSupp converti : nombre_heures={nombre_heures}, taux={taux}, montant={montant}")
+
             if heure_data:
                 HeureSupplementaire.objects.update_or_create(
                     fiche=fiche,
                     defaults={
-                        "nombre_heures": heure_data.get("nombre_heures", 0),
-                        "taux": heure_data.get("taux", 0),
-                        "montant": heure_data.get("montant", 0),
+                        "nombre_heures": nombre_heures,
+                        "taux": taux,
+                        "montant": montant,
                     }
                 )
 
@@ -324,17 +341,17 @@ class SaveFicheDePaieView(APIView):
                 Indemnite.objects.update_or_create(
                     fiche=fiche,
                     defaults={
-                        "indemnite_residence": indemnite_data.get("indemnite_residence", 0),
-                        "indemnite_logement": indemnite_data.get("indemnite_logement", 0),
-                        "indemnite_astreinte": indemnite_data.get("indemnite_astreinte", 0),
-                        "indemnite_technicite": indemnite_data.get("indemnite_technicite", 0),
-                        "indemnite_transport": indemnite_data.get("indemnite_transport", 0),
-                        "indemnite_responsabilite": indemnite_data.get("indemnite_responsabilite", 0),
-                        "indemnite_specifique": indemnite_data.get("indemnite_specifique", 0),
-                        "indemnite_reseau": indemnite_data.get("indemnite_reseau", 0),
-                        "indemnite_risque": indemnite_data.get("indemnite_risque", 0),
-                        "indemnite_garde": indemnite_data.get("indemnite_garde", 0),
-                        "indemnite_autres": indemnite_data.get("indemnite_autres", 0)
+                        "indemnite_residence": safe_decimal(indemnite_data.get("indemnite_residence", 0)),
+                        "indemnite_logement": safe_decimal(indemnite_data.get("indemnite_logement", 0)),
+                        "indemnite_astreinte": safe_decimal(indemnite_data.get("indemnite_astreinte", 0)),
+                        "indemnite_technicite": safe_decimal(indemnite_data.get("indemnite_technicite", 0)),
+                        "indemnite_transport": safe_decimal(indemnite_data.get("indemnite_transport", 0)),
+                        "indemnite_responsabilite": safe_decimal(indemnite_data.get("indemnite_responsabilite", 0)),
+                        "indemnite_specifique": safe_decimal(indemnite_data.get("indemnite_specifique", 0)),
+                        "indemnite_reseau": safe_decimal(indemnite_data.get("indemnite_reseau", 0)),
+                        "indemnite_risque": safe_decimal(indemnite_data.get("indemnite_risque", 0)),
+                        "indemnite_garde": safe_decimal(indemnite_data.get("indemnite_garde", 0)),
+                        "indemnite_autres": safe_decimal(indemnite_data.get("indemnite_autres", 0))
                     }
                 )
 
@@ -344,8 +361,8 @@ class SaveFicheDePaieView(APIView):
                 Cotisation.objects.update_or_create(
                     fiche=fiche,
                     defaults={
-                        "cotisation_caisse_sociale": cotisation_data.get("cotisation_caisse_sociale", 0),
-                        "cotisation_assurance": cotisation_data.get("cotisation_assurance", 0),
+                        "cotisation_caisse_sociale": safe_decimal(cotisation_data.get("cotisation_caisse_sociale", 0)),
+                        "cotisation_assurance": safe_decimal(cotisation_data.get("cotisation_assurance", 0)),
                     }
                 )
 
@@ -355,17 +372,17 @@ class SaveFicheDePaieView(APIView):
                 Remboursement.objects.update_or_create(
                     fiche=fiche,
                     defaults={
-                        "avances_sur_solde": remboursement_data.get("avances_sur_solde", 0),
-                        "remboursement_caisse_sociale": remboursement_data.get("remboursement_caisse_sociale", 0),
+                        "avances_sur_solde": safe_decimal(remboursement_data.get("avances_sur_solde", 0)),
+                        "remboursement_caisse_sociale": safe_decimal(remboursement_data.get("remboursement_caisse_sociale", 0)),
                     }
                 )
             
             # Extraction pour Taxes directement depuis synthese
             taxes_value = {
-                "iuts_brut": synthese.get("iuts_brut", 0),
-                "iuts_net": synthese.get("iuts_net", 0),
-                "fsp": synthese.get("fsp", 0),
-                "retenue_vacation": synthese.get("retenue_vacation", 0),
+                "iuts_brut": safe_decimal(synthese.get("iuts_brut", 0)),
+                "iuts_net": safe_decimal(synthese.get("iuts_net", 0)),
+                "fsp": safe_decimal(synthese.get("fsp", 0)),
+                "retenue_vacation": safe_decimal(synthese.get("retenue_vacation", 0)),
             }
 
             if any(value for value in taxes_value.values()):
@@ -376,10 +393,10 @@ class SaveFicheDePaieView(APIView):
 
             # Extraction pour Sécurité Sociale directement depuis synthese
             securite_value = {
-                "cnss_patronale": synthese.get("cnss_patronale", 0),
-                "cnss_employe": synthese.get("cnss_employe", 0),
-                "carfo_patronale": synthese.get("carfo_patronale", 0),
-                "carfo_employe": synthese.get("carfo_employe", 0),
+                "cnss_patronale": safe_decimal(synthese.get("cnss_patronale", 0)),
+                "cnss_employe": safe_decimal(synthese.get("cnss_employe", 0)),
+                "carfo_patronale": safe_decimal(synthese.get("carfo_patronale", 0)),
+                "carfo_employe": safe_decimal(synthese.get("carfo_employe", 0)),
             }
 
             if any(value for value in securite_value.values()):
@@ -388,12 +405,6 @@ class SaveFicheDePaieView(APIView):
                     defaults=securite_value
                 )
 
-
-           
-
-            # Optionnel : Mise à jour d'un éventuel paiement associé,
-            # par exemple via un modèle Paiement si vous en avez un.
-            # Vous pouvez par exemple :
             paiement, p_created = Paiement.objects.update_or_create(
                employe=fiche.employe,
                periode=fiche.session_de_paie,
@@ -546,7 +557,7 @@ def generate_payslip_pdf(request, periode_id, employe_id):
         })
     for r in sorted_retenues:
         merged_details.append({
-            "designation": r["libelle"],
+            "designation": r["libile"],
             "avoirs": "",
             "retenues": r["montant"]
         })
@@ -691,3 +702,87 @@ class RapportView(APIView):
             "total": total
         }
         return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def create_user(request):
+    """
+    Crée un nouvel utilisateur avec un rôle et une liste de pages accessibles.
+    """
+    User = get_user_model()
+    username = request.data.get("username")
+    password = request.data.get("password")
+    role = request.data.get("role", "user")
+    pages = request.data.get("pages", [])
+
+    if not username or not password:
+        return Response({"error": "Nom d'utilisateur et mot de passe requis."}, status=400)
+
+    if User.objects.filter(username=username).exists():
+        return Response({"error": "Ce nom d'utilisateur existe déjà."}, status=400)
+
+    user = User.objects.create_user(username=username, password=password)
+    user.role = role  # Assure-toi que le champ 'role' existe dans ton modèle User
+    user.pages = pages  # Assure-toi que le champ 'pages' (ArrayField ou JSONField) existe dans ton modèle User
+    user.save()
+
+    return Response({"message": "Utilisateur créé avec succès."}, status=201)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+
+@api_view(['GET', 'POST', 'DELETE', 'PUT'])
+@permission_classes([IsAdminUser])
+def users_view(request):
+    User = get_user_model()
+    if request.method == 'GET':
+        users = User.objects.all()
+        data = [
+            {
+                "id": u.id,
+                "username": u.username,
+                "role": getattr(u, "role", "user"),
+                "pages": getattr(u, "pages", []),
+            }
+            for u in users
+        ]
+        return Response(data)
+    elif request.method == 'POST':
+        username = request.data.get("username")
+        password = request.data.get("password")
+        role = request.data.get("role", "user")
+        pages = request.data.get("pages", [])
+        if not username or not password:
+            return Response({"error": "Nom d'utilisateur et mot de passe requis."}, status=400)
+        if User.objects.filter(username=username).exists():
+            return Response({"error": "Ce nom d'utilisateur existe déjà."}, status=400)
+        user = User.objects.create_user(username=username, password=password)
+        user.role = role
+        user.pages = pages
+        user.save()
+        return Response({"message": "Utilisateur créé avec succès."}, status=201)
+    elif request.method == 'DELETE':
+        user_id = request.data.get("id")
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            return Response({"message": "Utilisateur supprimé."})
+        except User.DoesNotExist:
+            return Response({"error": "Utilisateur introuvable."}, status=404)
+    elif request.method == 'PUT':
+        user_id = request.data.get("id")
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=user_id)
+            user.role = request.data.get("role", user.role)
+            user.pages = request.data.get("pages", user.pages)
+            password = request.data.get("password")
+            if password:
+                user.set_password(password)
+            user.save()
+            return Response({"message": "Utilisateur modifié."})
+        except User.DoesNotExist:
+            return Response({"error": "Utilisateur introuvable."}, status=404)
+

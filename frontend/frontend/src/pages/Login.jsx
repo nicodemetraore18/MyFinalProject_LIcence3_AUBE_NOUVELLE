@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../utils/axios";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../contexts/AuthContext";
 import { motion } from "framer-motion";
@@ -27,7 +27,7 @@ function parseJwt(token) {
 export default function Login() {
   const { register, handleSubmit } = useForm();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data) => {
@@ -40,13 +40,16 @@ export default function Login() {
 
       // Utilisation de notre propre fonction pour décoder le token JWT
       const decoded = parseJwt(res.data.access);
-      
       if (decoded && decoded.username) {
-        login({ username: decoded.username });
+        // login({ username: decoded.username });
       } else {
         throw new Error("Impossible de décoder le token ou username introuvable.");
       }
       
+      const userRes = await axios.get("/me/");
+      setUser(userRes.data);
+      localStorage.setItem("user", JSON.stringify(userRes.data));
+
       navigate("/employes");
     } catch (err) {
       alert("Erreur de connexion : identifiants incorrects");

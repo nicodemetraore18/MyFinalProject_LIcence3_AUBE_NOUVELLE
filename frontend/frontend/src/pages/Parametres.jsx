@@ -20,6 +20,8 @@ export default function Parametres() {
   logo: null,
   footer: "", // ✅ Ajout du texte du footer
 });
+const [successMessage, setSuccessMessage] = useState(""); // Ajouté
+
 
   // Chargement de l'unique instance de Paramètre depuis l'API
   useEffect(() => {
@@ -148,12 +150,14 @@ export default function Parametres() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
       setParametre(response.data);
+      setSuccessMessage("Paramètres mis à jour avec succès !");
     } else {
       const response = await axios.post("/parametres/", submissionData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setParametre(response.data);
       setSelectedParametreId(response.data.id);
+      setSuccessMessage("Paramètres enregistrés avec succès !");
     }
   } catch (error) {
     console.error(
@@ -261,6 +265,12 @@ export default function Parametres() {
           {selectedParametreId ? "Mettre à jour" : "Enregistrer"}
         </button>
       </form>
+
+      {successMessage && (
+        <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4">
+          {successMessage}
+        </div>
+      )}
 
        {/* Liste du paramètre (singleton converti en tableau) */}
       <h2 className="text-xl font-bold mt-6">Liste du paramètre</h2>

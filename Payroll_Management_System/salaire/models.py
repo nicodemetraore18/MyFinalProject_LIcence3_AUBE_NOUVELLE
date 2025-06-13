@@ -1,12 +1,14 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+class User(AbstractUser):
+    role = models.CharField(max_length=20, default="user")
+    pages = models.JSONField(default=list, blank=True)
+
 # ============================
 # Modèles de base existants
 # ============================
 
-class User(AbstractUser):
-    pass
 
 class Banque(models.Model):
     nom = models.CharField(max_length=100)
@@ -140,14 +142,7 @@ class FicheDePaie(models.Model):
     class Meta:
         unique_together = ('employe', 'session_de_paie')
 
-class SignaturePaie(models.Model):
-    periode = models.ForeignKey(PeriodePaiement, on_delete=models.CASCADE, related_name='signatures')
-    role = models.CharField(max_length=100, help_text="Fonction ou titre (ex: Chef de Service)")
-    nom_complet = models.CharField(max_length=200)
-    ordre = models.PositiveSmallIntegerField(default=0, help_text="Ordre d'apparition")
 
-    def __str__(self):
-        return f"{self.role}: {self.nom_complet}"
 
 class Paiement(models.Model):
     STATUT_CHOICES = [
@@ -223,8 +218,8 @@ class Prime(models.Model):
 # 3. Heures Supplémentaires
 class HeureSupplementaire(models.Model):
     fiche = models.ForeignKey(FicheDePaie, on_delete=models.CASCADE, related_name="heures_supplementaires")
-    nombre_heures = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    taux = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    nombre_heures = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    taux = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     montant = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def calculer_montant(self):
@@ -276,22 +271,22 @@ class SecuriteSocial(models.Model):
         return f"Sécurité Sociale pour {self.fiche.employe.nom_complet}"
 
 # 6. Exonérations
-class Exoneration(models.Model):
-    fiche = models.ForeignKey(FicheDePaie, on_delete=models.CASCADE, related_name="exonerations")
-    exo_ind_logement = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_astreinte = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_technicite = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_transport = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_responsabilite = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_specifique = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_reseau = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_risque = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_garde = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_autres = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    exo_ind_residence = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+# class Exoneration(models.Model):
+#     fiche = models.ForeignKey(FicheDePaie, on_delete=models.CASCADE, related_name="exonerations")
+#     exo_ind_logement = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_astreinte = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_technicite = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_transport = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_responsabilite = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_specifique = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_reseau = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_risque = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_garde = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_autres = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+#     exo_ind_residence = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
-    def __str__(self):
-        return f"Exonérations pour {self.fiche.employe.nom_complet}"
+#     def __str__(self):
+#         return f"Exonérations pour {self.fiche.employe.nom_complet}"
 
 # 7. Taxes
 class Taxes(models.Model):

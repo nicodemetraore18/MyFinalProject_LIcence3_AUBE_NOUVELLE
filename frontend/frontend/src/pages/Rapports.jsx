@@ -36,6 +36,8 @@ export default function Rapports() {
   const [banqueId, setBanqueId] = useState("");
   const [projets, setProjets] = useState([]);
   const [projetId, setProjetId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Charger les banques au montage
   useEffect(() => {
@@ -58,6 +60,8 @@ export default function Rapports() {
         (element !== "banques" || banqueId)
       )
     ) {
+      setLoading(true);
+      setError("");
       let url = `/rapports/?periode=${periodeId}&element=${element}`;
       if (sousElement) url += `&sous_element=${sousElement}`;
       if (element === "banques" && banqueId) url += `&banque_id=${banqueId}`;
@@ -65,6 +69,10 @@ export default function Rapports() {
       axios.get(url).then((res) => {
         setResultats(res.data.lignes || []);
         setTotal(res.data.total || 0);
+        setLoading(false);
+      }).catch((err) => {
+        setError("Erreur lors du chargement des rapports.");
+        setLoading(false);
       });
     } else {
       setResultats([]);
@@ -111,6 +119,7 @@ export default function Rapports() {
       <h1 className="text-2xl font-bold mb-4">Rapports</h1>
       <div className="flex gap-4 mb-6">
         <select
+          aria-label="Sélectionner une période"
           value={periodeId}
           onChange={(e) => setPeriodeId(e.target.value)}
           className="border p-2 rounded"
@@ -118,11 +127,12 @@ export default function Rapports() {
           <option value="">-- Sélectionner une période --</option>
           {periodes.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.nom || p.label || `Période ${p.id}`}
+              {p.mois && p.annee ? `${p.mois} ${p.annee}` : (p.nom || p.label || `Période ${p.id}`)}
             </option>
           ))}
         </select>
         <select
+          aria-label="Sélectionner un projet"
           value={projetId}
           onChange={e => setProjetId(e.target.value)}
           className="border p-2 rounded"
@@ -133,6 +143,7 @@ export default function Rapports() {
           ))}
         </select>
         <select
+          aria-label="Sélectionner un élément"
           value={element}
           onChange={(e) => {
             setElement(e.target.value);
@@ -177,86 +188,97 @@ export default function Rapports() {
       {resultats.length > 0 && (
         <div>
           <button
+            aria-label="Exporter en Excel"
             className="mb-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             onClick={exportExcel}
           >
             Exporter en Excel
           </button>
           {element === "banques" && banqueId ? (
-            <table className="min-w-full border mb-4">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1">Employé</th>
-                  <th className="border px-2 py-1">Net à verser</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultats.map((ligne) => (
-                  <tr key={ligne.employe_id}>
-                    <td className="border px-2 py-1">{ligne.nom} {ligne.prenom}</td>
-                    <td className="border px-2 py-1">{ligne.montant.toLocaleString()} FCFA</td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border mb-4">
+                <thead>
+                  <tr>
+                    <th className="border px-2 py-1">Employé</th>
+                    <th className="border px-2 py-1">Net à verser</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="border px-2 py-1 font-bold">Total</td>
-                  <td className="border px-2 py-1 font-bold">{total.toLocaleString()} FCFA</td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  {resultats.map((ligne) => (
+                    <tr key={ligne.employe_id}>
+                      <td className="border px-2 py-1">{ligne.nom} {ligne.prenom}</td>
+                      <td className="border px-2 py-1">{ligne.montant.toLocaleString()} FCFA</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td className="border px-2 py-1 font-bold">Total</td>
+                    <td className="border px-2 py-1 font-bold">{total.toLocaleString()} FCFA</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           ) : element === "banques" ? (
-            <table className="min-w-full border mb-4">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1">Banque</th>
-                  <th className="border px-2 py-1">Montant</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultats.map((ligne) => (
-                  <tr key={ligne.banque_id}>
-                    <td className="border px-2 py-1">{ligne.banque_nom}</td>
-                    <td className="border px-2 py-1">{ligne.montant.toLocaleString()} FCFA</td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border mb-4">
+                <thead>
+                  <tr>
+                    <th className="border px-2 py-1">Banque</th>
+                    <th className="border px-2 py-1">Montant</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="border px-2 py-1 font-bold">Total</td>
-                  <td className="border px-2 py-1 font-bold">{total.toLocaleString()} FCFA</td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  {resultats.map((ligne) => (
+                    <tr key={ligne.banque_id}>
+                      <td className="border px-2 py-1">{ligne.banque_nom}</td>
+                      <td className="border px-2 py-1">{ligne.montant.toLocaleString()} FCFA</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td className="border px-2 py-1 font-bold">Total</td>
+                    <td className="border px-2 py-1 font-bold">{total.toLocaleString()} FCFA</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           ) : (
-            <table className="min-w-full border mb-4">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1">Employé</th>
-                  <th className="border px-2 py-1">Montant</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultats.map((ligne) => (
-                  <tr key={ligne.employe_id}>
-                    <td className="border px-2 py-1">{ligne.nom} {ligne.prenom}</td>
-                    <td className="border px-2 py-1">{ligne.montant.toLocaleString()} FCFA</td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border mb-4">
+                <thead>
+                  <tr>
+                    <th className="border px-2 py-1">Employé</th>
+                    <th className="border px-2 py-1">Montant</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="border px-2 py-1 font-bold">Total</td>
-                  <td className="border px-2 py-1 font-bold">{total.toLocaleString()} FCFA</td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  {resultats.map((ligne) => (
+                    <tr key={ligne.employe_id}>
+                      <td className="border px-2 py-1">{ligne.nom} {ligne.prenom}</td>
+                      <td className="border px-2 py-1">{ligne.montant.toLocaleString()} FCFA</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td className="border px-2 py-1 font-bold">Total</td>
+                    <td className="border px-2 py-1 font-bold">{total.toLocaleString()} FCFA</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           )}
           <div className="font-bold text-lg">
             Total : {total.toLocaleString()} FCFA
           </div>
         </div>
       )}
+
+      {loading && <div className="text-blue-600 mb-2">Chargement...</div>}
+
+      {error && <div className="text-red-600 mb-2">{error}</div>}
 
       {periodeId && element && resultats.length === 0 && (
         <div className="text-gray-500">Aucune donnée pour cette période et cet élément.</div>

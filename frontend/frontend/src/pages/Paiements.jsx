@@ -17,8 +17,7 @@ export default function Paiements() {
     axios
       .get("/periodes/")
       .then((response) => {
-        const periodesActives = response.data.filter((p) => !p.cloture);
-        setPeriodes(periodesActives);
+        setPeriodes(response.data); // On garde toutes les périodes
       })
       .catch((error) =>
         console.error("Erreur lors de la récupération des périodes :", error)
@@ -105,8 +104,11 @@ export default function Paiements() {
 
     try {
       await axios.put(`/paiements/periodes/${periodeSelectionnee}/cloturer/`);
-      setPeriodes(periodes.filter((p) => p.id !== Number(periodeSelectionnee)));
-      setPeriodeSelectionnee(null);
+      // Met à jour l'état cloture de la période sélectionnée
+      setPeriodes(periodes.map(p =>
+        p.id == periodeSelectionnee ? { ...p, cloture: true } : p
+      ));
+      // Ne retire plus la période de la liste
     } catch (error) {
       console.error("Erreur lors de la clôture :", error);
     }
@@ -139,13 +141,13 @@ export default function Paiements() {
         <select
           onChange={(e) => setPeriodeSelectionnee(e.target.value)}
           className="w-full border rounded px-3 py-2 mb-6"
+          value={periodeSelectionnee || ""}
         >
           <option value="">--Choisissez une période--</option>
           {periodes.map((periode) => (
             <option
               key={periode.id}
               value={periode.id}
-              className={periode.cloture ? "hidden" : ""}
             >
               {periode.mois} {periode.annee}
             </option>
@@ -172,40 +174,55 @@ export default function Paiements() {
         Ajouter une période
       </button>
 
+      {/* Affichage du statut de la période sélectionnée */}
+      {periodeSelectionnee && (
+        <div className="mb-4">
+          <span className={`px-3 py-1 rounded text-white ${periodes.find(p => p.id == periodeSelectionnee)?.cloture ? "bg-red-600" : "bg-green-600"}`}>
+            {periodes.find(p => p.id == periodeSelectionnee)?.cloture ? "Période clôturée" : "Période non clôturée"}
+          </span>
+        </div>
+      )}
+
       {periodeSelectionnee && (
         <>
          <h2 className="text-2xl font-semibold mb-4">Employés payés :</h2>
 <ul>
   {employesPayes.map((employe) => {
-  console.log("Employé payé :", employe); // pour inspecter la structure
-  return (
-    <li key={employe.id || employe.employe_id} className="flex justify-between items-center p-2 border-b">
-      <div>
-        <span className="font-bold">
-          {employe.employe_nom_complet || employe.nom}
-        </span>{" - "}
-        <span>
-          {employe.employe_projet || employe.projet}
-        </span>{" | Salaire net : "}
-        <span className="text-green-600">
-          {employe.salaire_net || employe.montant_net || employe.montant}
-        </span>
-      </div>
-     <button
-  onClick={() => {
     const employeeId = employe.employe_id || employe.id;
-    console.log("Redirection vers fiche de paie pour :", { periode: periodeSelectionnee, employeeId });
-    window.open(`http://127.0.0.1:8000/api/payslip/${periodeSelectionnee}/${employeeId}/`, '_blank')
-  }}
-  className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
->
-  Voir Fiche de Paie
-</button>
-
-    </li>
-  );
-})}
-
+    return (
+      <li key={employeeId} className="flex justify-between items-center p-2 border-b">
+        <div>
+          <span className="font-bold">
+            {employe.employe_nom_complet || employe.nom}
+          </span>{" - "}
+          <span>
+            {employe.employe_projet || employe.projet}
+          </span>{" | Salaire net : "}
+          <span className="text-green-600">
+            {employe.salaire_net || employe.montant_net || employe.montant}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              window.open(`http://127.0.0.1:8000/api/payslip/${periodeSelectionnee}/${employeeId}/`, '_blank')
+            }}
+            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
+          >
+            Voir bulletin
+          </button>
+          <button
+            onClick={() => {
+              navigate(`/calculer-salaire/${periodeSelectionnee}/${employeeId}`);
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Modifier fiche de paie
+          </button>
+        </div>
+      </li>
+    );
+  })}
 </ul>
           <h2 className="text-2xl font-semibold mt-6 mb-4">
             Employés non payés :

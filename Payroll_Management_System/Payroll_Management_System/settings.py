@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -45,11 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'salaire',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
-    "django_extensions",
 
 ]
 
@@ -153,3 +154,4 @@ MEDIA_ROOT = BASE_DIR / "media"
 SECURE_BROWSER_XSS_FILTER = True  # Optionnel
 SECURE_CONTENT_TYPE_NOSNIFF = True  # Optionnel
 X_FRAME_OPTIONS = "ALLOWALL"  # Permet l'affichage en iframe
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Payroll_Management_System.settings')

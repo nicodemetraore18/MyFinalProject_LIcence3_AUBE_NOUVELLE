@@ -1,6 +1,3 @@
-
-
-
 // src/pages/CalculerSalaire.jsx
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
@@ -224,9 +221,9 @@ useEffect(() => {
         prime_anciennete: isNaN(primeData.prime_anciennete) ? 0 : primeData.prime_anciennete,
       },
       heure_supp: {
-        nombre_heures: isNaN(heureData.nombre_heures) ? 0 : heureData.nombre_heures,
-        taux: isNaN(heureData.taux) ? 0 : heureData.taux,
-        montant: isNaN(heureData.montant) ? 0 : Number(heureData.montant.toFixed(2)),
+        nombre_heures: isNaN(Number(heureData.nombre_heures)) ? 0 : Number(heureData.nombre_heures),
+        taux: isNaN(Number(heureData.taux)) ? 0 : Number(heureData.taux),
+        montant: isNaN(Number(heureData.montant)) ? 0 : Number(heureData.montant),
       },
       indemnites: {
         values: Object.keys(indemniteData).reduce((acc, key) => {

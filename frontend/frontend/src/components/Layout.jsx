@@ -21,6 +21,8 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   console.log("Utilisateur actuel :", user);
+  console.log("user", user);
+  console.log("user.pages", user?.pages);
 
   const handleLogout = () => {
     logout();
@@ -37,7 +39,8 @@ export default function Layout() {
   { name: "Paiements", path: "/paiements", icon: <CreditCard size={20} /> },
   { name: "Banques", path: "/banques", icon: <Banknote size={20} /> }, // <-- Ajouté
   { name: "Rapports", path: "/rapports", icon: <FileBarChart2 size={20} /> }, // <-- Ajouté
-  { name: "Paramètres", path: "/parametres", icon: <Settings size={20} /> }
+  { name: "Paramètres", path: "/parametres", icon: <Settings size={20} /> },
+  { name: "Administrateur", path: "/administration", icon: <Users size={20} /> } // Ajoute cette ligne
 ];
 
   // State pour récupérer les paramètres de l'entreprise (modèle Parametre)
@@ -60,6 +63,27 @@ export default function Layout() {
         console.error("Erreur de récupération des paramètres :", error)
       );
   }, []);
+
+  // Vérification des permissions d'accès à la page courante
+  const pageCourante = location.pathname;
+  const pageKey = pageCourante.startsWith("/") ? pageCourante.slice(1) : pageCourante;
+  // On prend la première partie du path (avant le / ou les paramètres)
+  const pageSlug = pageKey.split("/")[0];
+
+  if (
+    user &&
+    user.role !== "admin" &&
+    Array.isArray(user.pages) &&
+    pageCourante !== "/" && // Laisse passer l'accueil si besoin
+    !user.pages.map(p => p.trim().toLowerCase()).includes(pageSlug.trim().toLowerCase())
+  ) {
+    return <div>Accès refusé</div>;
+  }
+
+  if (!user) {
+    // Affiche un loader ou rien tant que l'utilisateur n'est pas chargé
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -89,26 +113,36 @@ export default function Layout() {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
-                  ${isActive ? "bg-blue-300 text-white scale-110" : "text-gray-100 hover:bg-blue-700 hover:text-white"}`}
-              >
-                <span
-                  className={`transition-transform duration-200 ${
-                    isActive ? "scale-110" : ""
-                  }`}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
+          {navItems
+  .filter((item) => {
+    const navKey = (item.path.startsWith("/") ? item.path.slice(1) : item.path).split("/")[0].trim().toLowerCase();
+    if (user.role === "admin") return true;
+    if (!Array.isArray(user.pages)) return false;
+    if (item.path === "/") {
+      return user.pages.includes("accueil") || user.pages.includes("");
+    }
+    return user.pages.map(p => p.trim().toLowerCase()).includes(navKey);
+  })
+  .map((item) => {
+      const isActive = location.pathname === item.path;
+      return (
+        <Link
+          key={item.name}
+          to={item.path}
+          className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 
+            ${isActive ? "bg-blue-300 text-white scale-110" : "text-gray-100 hover:bg-blue-700 hover:text-white"}`}
+        >
+          <span
+            className={`transition-transform duration-200 ${
+              isActive ? "scale-110" : ""
+            }`}
+          >
+            {item.icon}
+          </span>
+          <span>{item.name}</span>
+        </Link>
+      );
+    })}
         </nav>
       </aside>
 

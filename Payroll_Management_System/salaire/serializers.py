@@ -7,9 +7,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (
     User, Banque, Projet, Poste, Employe, DetailEmploye,
-    ComposantBase, Prime, HeureSupplementaire, Indemnite, SecuriteSocial,
-    Exoneration, Taxes, Cotisation, Remboursement,
-    PeriodePaiement, FicheDePaie, SignaturePaie, Paiement, Parametre
+    ComposantBase, Prime, HeureSupplementaire, Indemnite, SecuriteSocial, Taxes, Cotisation, Remboursement,
+    PeriodePaiement, FicheDePaie, Paiement, Parametre
 )
 
 User = get_user_model()
@@ -93,32 +92,44 @@ class PeriodePaiementSerializer(serializers.ModelSerializer):
 # -------------------------
 # Serializers pour Signature et Paiement
 # -------------------------
-class SignaturePaieSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SignaturePaie
-        fields = '__all__'
+# # class SignaturePaieSerializer(serializers.ModelSerializer):
+# #     class Meta:
+# #         model = SignaturePaie
+#         fields = '__all__'
 
 
 class PaiementSerializer(serializers.ModelSerializer):
     employe_nom_complet = serializers.SerializerMethodField()
+    employe_nom = serializers.CharField(source='employe.nom', read_only=True)
+    employe_prenom = serializers.CharField(source='employe.prenom', read_only=True)
     employe_projet = serializers.CharField(source='employe.projet.nom', read_only=True)
     employe_id = serializers.IntegerField(source='employe.id', read_only=True)
-    salaire_net = serializers.SerializerMethodField()  # Nouveau champ pour le salaire net
+    salaire_net = serializers.SerializerMethodField()
+    periode = serializers.SerializerMethodField()
 
     class Meta:
         model = Paiement
-        fields = ['id', 'employe_id', 'employe_nom_complet', 'employe_projet', 'montant', 'statut', 'salaire_net']
+        fields = [
+            'id', 'employe_id', 'employe_nom_complet', 'employe_nom', 'employe_prenom', 'employe_projet',
+            'montant', 'statut', 'salaire_net', 'periode'
+        ]
 
     def get_employe_nom_complet(self, obj):
         return obj.employe.nom_complet
 
     def get_salaire_net(self, obj):
-        """
-        On suppose que 'fiche_de_paie' est le nom de la relation vers FicheDePaie dans le modèle Paiement
-        et que le champ correspondant au salaire net dans FicheDePaie est 'salaire_net_a_payer'.
-        """
         if hasattr(obj, 'fiche_de_paie') and obj.fiche_de_paie:
             return obj.fiche_de_paie.salaire_net_a_payer
+        return None
+
+    def get_periode(self, obj):
+        if obj.periode:
+            return {
+                "id": obj.periode.id,
+                "mois": obj.periode.mois,
+                "annee": obj.periode.annee,
+                "cloture": obj.periode.cloture,
+            }
         return None
 
 
@@ -191,17 +202,17 @@ class SecuriteSocialSerializer(serializers.ModelSerializer):
         fields = ['id', 'cnss_patronale', 'cnss_employe', 'carfo_patronale', 'carfo_employe']
 
 
-class ExonerationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Exoneration
-        # 'fiche' exclu
-        fields = [
-            'id',
-            'exo_ind_logement', 'exo_ind_astreinte', 'exo_ind_technicite',
-            'exo_ind_transport', 'exo_ind_responsabilite', 'exo_ind_specifique',
-            'exo_ind_reseau', 'exo_ind_risque', 'exo_ind_garde',
-            'exo_ind_autres', 'exo_ind_residence'
-        ]
+# class ExonerationSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Exoneration
+#         # 'fiche' exclu
+#         fields = [
+#             'id',
+#             'exo_ind_logement', 'exo_ind_astreinte', 'exo_ind_technicite',
+#             'exo_ind_transport', 'exo_ind_responsabilite', 'exo_ind_specifique',
+#             'exo_ind_reseau', 'exo_ind_risque', 'exo_ind_garde',
+#             'exo_ind_autres', 'exo_ind_residence'
+#         ]
 
 
 class TaxesSerializer(serializers.ModelSerializer):
@@ -258,8 +269,8 @@ class FicheDePaieSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'employe', 'employe_id',
-            'session_de_paie', 'session_de_paie_id',  # Utilisation du nom correct
-            'mode_de_paiement',
+            'session_de_paie', 'session_de_paie_id',
+            'mode_de_paiement',  # <-- corrige ici
             'salaire_base_fiscale',
             'total_indemnites',
             'salaire_brut',

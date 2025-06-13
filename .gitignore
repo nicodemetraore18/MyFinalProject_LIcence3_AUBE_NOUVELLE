@@ -20,6 +20,7 @@ ENV/
 backend/env/
 backend/venv/
 backend/.venv/
+conceptionUml/
 
 # Django DB & secrets
 *.sqlite3

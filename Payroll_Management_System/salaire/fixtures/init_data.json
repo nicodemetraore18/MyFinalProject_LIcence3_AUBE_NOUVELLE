@@ -20,6 +20,16 @@
     }
   },
   {
+    "model": "salaire.projet",
+    "pk": 3,
+    "fields": {
+      "nom": "Projet Gamma",
+      "description": "Projet de refonte du site web.",
+      "date_debut": "2025-03-01",
+      "date_fin": "2025-10-31"
+    }
+  },
+  {
     "model": "salaire.poste",
     "pk": 1,
     "fields": {
@@ -33,6 +43,22 @@
     "fields": {
       "nom": "Comptable",
       "projet": 2
+    }
+  },
+  {
+    "model": "salaire.poste",
+    "pk": 3,
+    "fields": {
+      "nom": "Chef de projet",
+      "projet": 3
+    }
+  },
+  {
+    "model": "salaire.poste",
+    "pk": 4,
+    "fields": {
+      "nom": "Designer",
+      "projet": 3
     }
   },
   {
@@ -56,21 +82,23 @@
     }
   },
   {
-    "model": "salaire.salaire",
-    "pk": 1,
+    "model": "salaire.employe",
+    "pk": 3,
     "fields": {
-      "employe": 1,
-      "montant": 500000,
-      "date_versement": "2025-01-15"
+      "nom": "Ouédraogo",
+      "prenom": "Issa",
+      "poste": 3,
+      "projet": 3
     }
   },
   {
-    "model": "salaire.salaire",
-    "pk": 2,
+    "model": "salaire.employe",
+    "pk": 4,
     "fields": {
-      "employe": 2,
-      "montant": 300000,
-      "date_versement": "2025-02-10"
+      "nom": "Zongo",
+      "prenom": "Fatou",
+      "poste": 4,
+      "projet": 3
     }
   }
 ]
