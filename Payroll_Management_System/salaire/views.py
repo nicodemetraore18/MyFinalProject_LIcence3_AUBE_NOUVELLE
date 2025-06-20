@@ -21,6 +21,7 @@ from .models import (
     PeriodePaiement, FicheDePaie, Paiement, Parametre
 )
 from .serializers import (
+    ChangePasswordSerializer,
     ProjetSerializer, PosteSerializer, EmployeSerializer, FicheDePaieSerializer,
     UserSerializer, ParametreSerializer, PasswordChangeSerializer,
     MyTokenObtainPairSerializer, PeriodePaiementSerializer, PaiementSerializer,
@@ -32,6 +33,7 @@ from .serializers import (
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from decimal import Decimal, InvalidOperation
+
 
 def safe_decimal(value):
     try:
@@ -48,6 +50,27 @@ def safe_decimal(value):
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        if not serializer.is_valid():
+            # DEBUG : imprimer les erreurs dans la console
+            print(serializer.errors)
+            raise ValidationError(serializer.errors)
+
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        return Response(
+            {"detail": "Mot de passe mis à jour avec succès."},
+            status=status.HTTP_200_OK
+        )
 
 # ------------------------------
 # Endpoints pour les paiements et périodes
@@ -557,7 +580,7 @@ def generate_payslip_pdf(request, periode_id, employe_id):
         })
     for r in sorted_retenues:
         merged_details.append({
-            "designation": r["libile"],
+            "designation": r["libelle"],
             "avoirs": "",
             "retenues": r["montant"]
         })

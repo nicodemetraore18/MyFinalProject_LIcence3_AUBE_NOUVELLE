@@ -259,16 +259,6 @@ class Indemnite(models.Model):
     def __str__(self):
         return f"Indemnités pour {self.fiche.employe.nom_complet}"
 
-# 5. Sécurité Sociale
-class SecuriteSocial(models.Model):
-    fiche = models.ForeignKey(FicheDePaie, on_delete=models.CASCADE, related_name="securite_social")
-    cnss_patronale = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    cnss_employe = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    carfo_patronale = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    carfo_employe = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-
-    def __str__(self):
-        return f"Sécurité Sociale pour {self.fiche.employe.nom_complet}"
 
 # 6. Exonérations
 # class Exoneration(models.Model):
@@ -287,6 +277,18 @@ class SecuriteSocial(models.Model):
 
 #     def __str__(self):
 #         return f"Exonérations pour {self.fiche.employe.nom_complet}"
+
+# 5. Sécurité Sociale
+class SecuriteSocial(models.Model):
+    fiche = models.ForeignKey(FicheDePaie, on_delete=models.CASCADE, related_name="securite_social")
+    cnss_patronale = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    cnss_employe = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    carfo_patronale = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    carfo_employe = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"Sécurité Sociale pour {self.fiche.employe.nom_complet}"
+
 
 # 7. Taxes
 class Taxes(models.Model):

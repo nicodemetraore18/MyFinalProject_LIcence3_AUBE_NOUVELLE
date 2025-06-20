@@ -13,6 +13,16 @@ from .models import (
 
 User = get_user_model()
 
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=4)
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("L'ancien mot de passe est incorrect.")
+        return value
+
 
 # -------------------------
 # Projet, Poste, DetailEmploye, Employe serializers

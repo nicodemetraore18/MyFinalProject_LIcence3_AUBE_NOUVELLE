@@ -32,6 +32,7 @@ from .views import (
     RapportView,
     create_user,  # Assurez-vous d'importer votre nouvelle vue ici
     users_view,
+    ChangePasswordView,
 )
 
 router = DefaultRouter()
@@ -57,6 +58,7 @@ urlpatterns = [
 
     # Ici, vous pouvez ajouter d'autres endpoints personnalisés si besoin
     path('users/', users_view, name='users_view'),  # Votre nouvel endpoint
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
 
     # Ensuite, incluez les routes du routeur
     path('', include(router.urls)),
